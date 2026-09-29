@@ -227,7 +227,10 @@ const DATA=[{"W":2880,"H":1620,"L":[["p00_0.jpg",0,0,2880,1620,1,0],["p00_manR.w
 
   /* ---------- tilt: mouse, or phone orientation ---------- */
   let tx=0,ty=0,last=-1e9,gyro=false,base=null;
-  addEventListener('pointermove',e=>{ if(e.pointerType!=='mouse') return; tx=e.clientX/innerWidth*2-1; ty=e.clientY/innerHeight*2-1; last=performance.now(); });
+  addEventListener('pointermove',e=>{ if(e.pointerType!=='mouse' && !e.buttons && !drag) return; tx=e.clientX/innerWidth*2-1; ty=e.clientY/innerHeight*2-1; last=performance.now(); gyro=false; });
+  // touch: the lamp follows your finger while it is on the screen
+  addEventListener('pointerdown',e=>{ if(e.pointerType==='mouse') return; tx=e.clientX/innerWidth*2-1; ty=e.clientY/innerHeight*2-1; last=performance.now(); });
+  const COARSE=matchMedia('(pointer: coarse)').matches;
   document.addEventListener('pointerleave',()=>{tx=ty=0;});
   const clamp=(v,a=-1,b=1)=>Math.max(a,Math.min(b,v));
   function onTilt(e){
@@ -271,7 +274,7 @@ const DATA=[{"W":2880,"H":1620,"L":[["p00_0.jpg",0,0,2880,1620,1,0],["p00_manR.w
       if(t>=nextAdvance){ target=Math.round(target)+1; nextAdvance=t+HOLD; }
     } else if(drag || t-lastUser<=IDLE){ nextAdvance=t+HOLD; }
     pos += (target-pos)*(reduce?1:.14);
-    let gx=tx,gy=ty; if(t-last>2500){ gx=Math.sin(t/3100)*.55; gy=Math.sin(t/4300)*.35; }
+    let gx=tx,gy=ty; if(t-last>2500){ const k=COARSE?1.45:1; gx=Math.sin(t/(COARSE?2400:3100))*.55*k; gy=Math.sin(t/(COARSE?3300:4300))*.35*k; }   // no pointer: the light and tilt drift on their own (stronger on phones)
     wx+=(gx-wx)*(gyro?.1:.05); wy+=(gy-wy)*(gyro?.1:.05);
     const fl=reduce?1:.88+.08*Math.sin(t/97)+.05*Math.sin(t/31+1.3)+.03*Math.random();
     // the whole strip shares the tilt, so film and pictures move as one layered object

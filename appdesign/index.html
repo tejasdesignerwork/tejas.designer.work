@@ -221,6 +221,7 @@ body{overflow:hidden;-webkit-user-select:none;user-select:none;}
 #phone-rig{position:absolute;inset:0;transform:translateX(var(--phone-x,21vw));}
 #css-layer,#gl-layer{position:absolute;inset:0;}
 @media (max-aspect-ratio:1/1){#phone-rig{--phone-x:0px;}}
+@media (max-height:560px) and (min-aspect-ratio:1/1){#phone-rig{--phone-x:17vw;}}
 .hud button + button{margin-left:8px;}
 #gl-layer{pointer-events:none;}
 #gl-layer canvas{display:block;}
@@ -236,6 +237,8 @@ body{overflow:hidden;-webkit-user-select:none;user-select:none;}
 .loading{position:fixed;inset:0;display:grid;place-items:center;font-family:var(--pixel);font-size:10px;color:var(--blue-dark);z-index:6;pointer-events:none;}
 .stubs{display:none;}
 .loading[hidden]{display:none;}
+@media (max-width:600px){.hint{display:none;}.hud{justify-content:center;}}
+#phone-rig{top:0;bottom:0;}
 @media (max-height:560px){.hint{display:none;}.hud{justify-content:flex-start;left:12px;bottom:12px;}.hud button{font-size:7px;padding:7px 9px;}.credit{font-size:10px;top:8px;left:12px;right:auto;}}
 .coach{opacity:0;transition:opacity .45s ease;}
 .coach.live{opacity:1;}
@@ -650,7 +653,26 @@ window.startTour = function(){
     return bytes.buffer;
   }
 
-  let home = null;
+  let home = null, frameSize = null, screenObj = null, screenMeshRef = null;
+  // Fit the phone to the current window. Runs again on every resize, because inside the portfolio the
+  // embed can load before its window has its final size (phones, TS-OS window opening).
+  function fitPhone(first){
+    if (!frameSize) return;
+    const size = frameSize;
+    const fitH = size.y / (2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)));
+    const fitW = size.x / (2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))) / camera.aspect;
+    const compact = innerHeight < 560;                  // e.g. inside the portfolio's TS-OS window
+    const portrait = innerHeight > innerWidth;          // leave room for the buttons under the phone
+    const dist = Math.max(fitH, fitW) * (compact ? 1.2 : portrait ? 1.42 : 1.25) + size.z;
+    const prev = home;
+    home = {pos: new THREE.Vector3(dist*0.28, dist*0.08, dist*0.96)};
+    controls.minDistance = dist*0.45;
+    controls.maxDistance = dist*1.8;
+    // keep the viewer's orbit if they've moved it; otherwise sit at the new home
+    if (first || !prev || camera.position.distanceTo(prev.pos) < prev.pos.length()*0.02) camera.position.copy(home.pos);
+    controls.target.set(0,0,0);
+    controls.update(); dirty = true;
+  }
   new THREE.GLTFLoader().parse(b64ToBuf(document.getElementById('glb-data').textContent), '', gltf => {
     const model = gltf.scene;
     model.updateMatrixWorld(true);
@@ -693,16 +715,8 @@ window.startTour = function(){
 
     // Frame the phone
     const size = box.getSize(new THREE.Vector3());
-    const fitH = size.y / (2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)));
-    const fitW = size.x / (2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))) / camera.aspect;
-    const compact = innerHeight < 560;                  // e.g. inside the portfolio's TS-OS window
-    const dist = Math.max(fitH, fitW) * (compact ? 1.04 : 1.25) + size.z;
-    home = {pos: new THREE.Vector3(dist*0.28, dist*0.08, dist*0.96)};
-    camera.position.copy(home.pos);
-    controls.target.set(0,0,0);
-    controls.minDistance = dist*0.45;
-    controls.maxDistance = dist*1.8;
-    controls.update();
+    frameSize = size; screenObj = obj; screenMeshRef = screenMesh;
+    fitPhone(true);
 
     document.getElementById('loading').hidden = true;
     rigSize = size.y;
@@ -796,8 +810,51 @@ window.startTour = function(){
   addEventListener('resize', () => {
     camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
     gl.setSize(innerWidth, innerHeight); css.setSize(innerWidth, innerHeight);
+    if (!intro) fitPhone(false);
     dirty = true;
   });
+
+  /* ---------- touch fallback for the 3D-placed screen ----------
+     iPhone Safari can miss taps on DOM that sits in 3D space inside a rotated page (the portfolio turns its
+     layout sideways on phones). If a tap doesn't reach the screen on its own, find what was under the
+     finger by ray-casting onto the display and measuring the screen's own layout, then click it. */
+  let tapStart = null, tapHandled = false;
+  addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') return; tapStart = {x: e.clientX, y: e.clientY, t: performance.now()}; tapHandled = false; }, true);
+  screenEl.addEventListener('click', () => { tapHandled = true; }, true);
+  addEventListener('pointerup', e => {
+    if (!tapStart || e.pointerType === 'mouse') return;
+    const st = tapStart; tapStart = null;
+    if (Math.hypot(e.clientX - st.x, e.clientY - st.y) > 10 || performance.now() - st.t > 700) return;
+    const cx = e.clientX, cy = e.clientY;
+    setTimeout(() => { if (!tapHandled) manualTap(cx, cy); }, 90);
+  }, true);
+  function boxIn(el){
+    let x = 0, y = 0, n = el;
+    while (n && n !== screenEl){ x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; }
+    if (n !== screenEl) return null;
+    for (let p = el.parentElement; p && p !== screenEl; p = p.parentElement){ x -= p.scrollLeft; y -= p.scrollTop; }
+    return {x, y, w: el.offsetWidth, h: el.offsetHeight};
+  }
+  const rc = new THREE.Raycaster();
+  function manualTap(cx, cy){
+    if (!screenObj || !screenMeshRef || intro) return false;
+    const rigEl = document.getElementById('phone-rig');
+    const m = new DOMMatrixReadOnly(getComputedStyle(rigEl).transform);
+    const ndc = new THREE.Vector2((cx - m.m41) / innerWidth * 2 - 1, -((cy - m.m42) / innerHeight) * 2 + 1);
+    rc.setFromCamera(ndc, camera);
+    const hit = rc.intersectObject(screenMeshRef, false)[0]; if (!hit) return false;
+    const local = screenObj.worldToLocal(hit.point.clone());
+    const px = local.x + screenEl.offsetWidth / 2, py = screenEl.offsetHeight / 2 - local.y;
+    let best = null;
+    screenEl.querySelectorAll('button,a,[onclick],li,[role=button],input,label,summary,[tabindex]').forEach(el => {
+      const r = boxIn(el); if (!r || !r.w || !r.h) return;
+      if (getComputedStyle(el).visibility === 'hidden') return;
+      if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h && (!best || best.contains(el))) best = el;
+    });
+    if (best){ best.click(); return true; }
+    return false;
+  }
+  window.__manualTap = manualTap;
   document.addEventListener('visibilitychange', () => { lastT = null; dirty = true; });
 
   (function loop(){
@@ -810,5 +867,4 @@ window.startTour = function(){
   })();
 })();
 </script>
-
 </html>
