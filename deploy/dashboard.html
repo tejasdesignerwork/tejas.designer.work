@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Portfolio Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07070b;--panel:#0e0e15;--panel2:#13131c;--line:rgba(236,226,214,.09);--line2:rgba(236,226,214,.16);--ink:#efe6da;--dim:#8f8a92;--faint:#5b5761;
+  --acc:#e0b27b;--acc2:#4fd1b0;--acc3:#e67047;--good:#7fd39a;--bad:#e6776a;
+  --serif:"DM Serif Display",Georgia,serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+:root[data-theme="light"]{--bg:#f4f0ea;--panel:#fffdf9;--panel2:#f7f2ea;--line:rgba(30,24,20,.09);--line2:rgba(30,24,20,.18);--ink:#1d1916;--dim:#6f6861;--faint:#a39b92;--acc:#b07a3c;--acc2:#1f9c7f;--acc3:#c8532a}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#f4f0ea;--panel:#fffdf9;--panel2:#f7f2ea;--line:rgba(30,24,20,.09);--line2:rgba(30,24,20,.18);--ink:#1d1916;--dim:#6f6861;--faint:#a39b92;--acc:#b07a3c;--acc2:#1f9c7f;--acc3:#c8532a}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:400 13px/1.5 var(--mono)}
+body{min-height:100vh;padding:0 max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+button,select,input{font:inherit;color:inherit}
+.wrap{max-width:1320px;margin:0 auto}
+header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:26px 0 18px;border-bottom:1px solid var(--line);margin-bottom:20px}
+h1{font:400 30px/1 var(--serif);margin:0;letter-spacing:.005em}
+h1 small{display:block;font:500 10px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase;color:var(--dim);margin-top:8px}
+.sp{flex:1}
+.live{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid var(--line2);border-radius:999px;font-size:12px}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 0 var(--good);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(127,211,154,.6)}70%{box-shadow:0 0 0 8px rgba(127,211,154,0)}100%{box-shadow:0 0 0 0 rgba(127,211,154,0)}}
+.seg{display:flex;border:1px solid var(--line2);border-radius:9px;overflow:hidden}
+.seg button{background:none;border:0;padding:7px 12px;cursor:pointer;color:var(--dim);font-size:12px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.btn{background:none;border:1px solid var(--line2);border-radius:9px;padding:7px 12px;cursor:pointer;font-size:12px;color:var(--dim)}
+.btn:hover{color:var(--ink)}
+.demo{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--acc3);border:1px solid currentColor;border-radius:6px;padding:4px 8px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:12px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 16px 14px}
+.kpi b{display:block;font:400 32px/1.05 var(--serif);margin:8px 0 6px;letter-spacing:.01em}
+.lbl{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+.kpi .d{font-size:11px;color:var(--faint)}
+.up{color:var(--good)!important}.down{color:var(--bad)!important}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
+.card h2{font:500 10px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin:0 0 14px;display:flex;justify-content:space-between;gap:8px}
+.card h2 span{color:var(--faint);letter-spacing:.08em;text-transform:none}
+.c12{grid-column:span 12}.c8{grid-column:span 8}.c6{grid-column:span 6}.c4{grid-column:span 4}
+@media (max-width:1000px){.c8,.c6,.c4{grid-column:span 12}}
+@media (min-width:1001px) and (max-width:1200px){.c4{grid-column:span 6}}
+svg{display:block;width:100%;overflow:visible}
+.axis{fill:var(--faint);font-size:10px}
+.gridl{stroke:var(--line);stroke-width:1}
+.bars{display:flex;flex-direction:column;gap:9px}
+.bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center}
+.bar .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .v{color:var(--dim);font-variant-numeric:tabular-nums}
+.bar .t{grid-column:1/-1;height:6px;border-radius:4px;background:var(--panel2);overflow:hidden}
+.bar .t i{display:block;height:100%;border-radius:4px;background:var(--acc)}
+.funnel .row{display:grid;grid-template-columns:150px 1fr 90px;gap:12px;align-items:center;margin-bottom:9px}
+@media (max-width:560px){.funnel .row{grid-template-columns:110px 1fr 70px}}
+.funnel .t{height:26px;background:var(--panel2);border-radius:6px;overflow:hidden}
+.funnel .t i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),color-mix(in srgb,var(--acc) 60%,var(--acc3)));border-radius:6px}
+.funnel .v{text-align:right;font-variant-numeric:tabular-nums}.funnel .v small{display:block;color:var(--faint);font-size:10px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{font-weight:500;text-align:left;color:var(--dim);font-size:10px;letter-spacing:.16em;text-transform:uppercase;padding:0 10px 10px 0;border-bottom:1px solid var(--line)}
+td{padding:10px 10px 10px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl{overflow-x:auto}
+.chip{display:inline-block;padding:2px 7px;margin:0 4px 4px 0;border-radius:999px;border:1px solid var(--line2);font-size:11px;color:var(--dim);white-space:nowrap}
+.empty{color:var(--faint);padding:18px 0}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);padding:6px 9px;border-radius:7px;font-size:11px;transform:translate(-50%,calc(-100% - 10px));opacity:0;transition:opacity .12s;z-index:9;white-space:nowrap}
+.hours{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;align-items:end;height:90px}
+.hours i{display:block;background:var(--acc2);border-radius:3px 3px 0 0;min-height:2px;opacity:.85}
+.hl{display:flex;justify-content:space-between;color:var(--faint);font-size:10px;margin-top:6px}
+#login{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:20;padding:16px}
+#login form{width:min(380px,100%);background:var(--panel);border:1px solid var(--line2);border-radius:16px;padding:26px}
+#login h1{font-size:26px;margin-bottom:6px}
+#login p{color:var(--dim);margin:0 0 18px}
+#login input{width:100%;padding:11px 12px;border-radius:9px;border:1px solid var(--line2);background:var(--panel2);margin-bottom:12px}
+#login button{width:100%;padding:11px;border-radius:9px;border:0;background:var(--ink);color:var(--bg);cursor:pointer;font-weight:600}
+#login .err{color:var(--bad);font-size:12px;min-height:18px}
+footer{color:var(--faint);font-size:11px;margin-top:22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+</style>
+</head>
+<body>
+<div id="login" hidden>
+  <form id="lf">
+    <h1>Portfolio Analytics</h1>
+    <p>Private. Enter your dashboard key.</p>
+    <input id="key" type="password" autocomplete="current-password" placeholder="Dashboard key" required>
+    <div class="err" id="lerr"></div>
+    <button type="submit">Open dashboard</button>
+  </form>
+</div>
+<div class="wrap">
+  <header>
+    <h1>Portfolio Analytics<small>Tejas Shetty · viewer interactions</small></h1>
+    <span class="demo" id="demoTag" hidden>Demo data</span>
+    <span class="sp"></span>
+    <div class="live" title="Viewers active in the last 60 seconds"><i></i><span id="live">0</span>&nbsp;on the site now</div>
+    <div class="seg" id="range">
+      <button data-d="1">24h</button><button data-d="7" aria-pressed="true">7d</button><button data-d="30">30d</button><button data-d="90">90d</button>
+    </div>
+    <button class="btn" id="csv" title="Download sessions as CSV">Export</button>
+    <button class="btn" id="out" title="Forget the key on this device">Lock</button>
+  </header>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="grid">
+    <div class="card c8"><h2>Visitors over time <span id="tsHint"></span></h2><div id="series"></div></div>
+    <div class="card c4"><h2>How far they scroll <span>visits that reached each scene</span></h2><div id="depth" class="bars"></div></div>
+
+    <div class="card c6"><h2>Engagement funnel <span>share of sessions</span></h2><div id="funnel" class="funnel"></div></div>
+    <div class="card c6"><h2>Interactive points <span>sessions that opened it</span></h2><div id="points" class="bars"></div></div>
+
+    <div class="card c4"><h2>Photoshoots opened</h2><div id="shoots" class="bars"></div></div>
+    <div class="card c4"><h2>Projects opened <span>TS-OS</span></h2><div id="projects" class="bars"></div></div>
+    <div class="card c4"><h2>Contact clicks</h2><div id="contact" class="bars"></div></div>
+
+    <div class="card c4"><h2>Countries</h2><div id="countries" class="bars"></div></div>
+    <div class="card c4"><h2>Devices &amp; systems</h2><div id="devices" class="bars"></div></div>
+    <div class="card c4"><h2>Where they came from</h2><div id="refs" class="bars"></div></div>
+
+    <div class="card c6"><h2>Browsers</h2><div id="browsers" class="bars"></div></div>
+    <div class="card c6"><h2>Time of day <span>your local time</span></h2><div id="hours"></div></div>
+
+    <div class="card c12"><h2>Recent visits <span>latest 30</span></h2><div class="tbl" id="recent"></div></div>
+  </section>
+  <footer><span id="upd"></span><span>No cookies · anonymous IDs · bots filtered</span></footer>
+</div>
+<div class="tip" id="tip"></div>
+<script>
+(function(){
+const DEMO = /[?&]demo\b/.test(location.search) || window.__DEMO === true;
+const SHOTS = ['Desk','Verification tray','Ball to the box','Shutter','Inside the room','Camera on the stand','Rig · signal lost','Phone booth'];
+const POINTS = {cam:'Camera · photoshoots', system:'Main system · TS-OS', booth:'Phone booth · contact'};
+const CONTACT = {'l-mail':'Email','l-work':'Instagram · work','l-personal':'Instagram · personal'};
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtN = n => n >= 1e4 ? (n/1e3).toFixed(1).replace(/\.0$/,'')+'k' : String(Math.round(n));
+const fmtT = s => { s = Math.round(s); if (s < 60) return s + 's'; const m = Math.floor(s/60), r = s % 60; return m < 60 ? m + 'm ' + String(r).padStart(2,'0') + 's' : Math.floor(m/60) + 'h ' + (m%60) + 'm'; };
+const pct = (a,b) => b ? Math.round(a/b*100) : 0;
+const pretty = k => String(k||'').replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+let days = 7, key = '', data = null;
+try { key = localStorage.getItem('pa-key') || ''; } catch(e){}
+
+/* ---------- data ---------- */
+async function load(){
+  if (DEMO){ data = demo(days); render(); return; }
+  if (!key){ $('login').hidden = false; return; }
+  try {
+    const r = await fetch('/api/stats?days=' + days + '&tz=' + new Date().getTimezoneOffset(), {headers:{Authorization:'Bearer ' + key}, cache:'no-store'});
+    if (r.status === 401){ key = ''; try{localStorage.removeItem('pa-key')}catch(e){} $('login').hidden = false; $('lerr').textContent = 'That key didn\'t work.'; return; }
+    data = await r.json(); $('login').hidden = true; render();
+  } catch(e){ $('upd').textContent = 'Could not reach the server — retrying…'; }
+}
+$('lf').onsubmit = e => { e.preventDefault(); key = $('key').value.trim(); try{localStorage.setItem('pa-key', key)}catch(e){} $('lerr').textContent=''; load(); };
+$('out').onclick = () => { key=''; try{localStorage.removeItem('pa-key')}catch(e){} location.reload(); };
+$('range').onclick = e => { const b = e.target.closest('button'); if (!b) return; days = +b.dataset.d; [...$('range').children].forEach(x => x.setAttribute('aria-pressed', x === b)); load(); };
+setInterval(() => { if (!document.hidden && (DEMO || key)) load(); }, 30000);
+
+/* ---------- render ---------- */
+function render(){
+  const d = data, t = d.totals;
+  $('demoTag').hidden = !DEMO;
+  $('live').textContent = d.live;
+  const delta = (cur, prev, inv) => { if (prev == null || !prev) return ''; const ch = Math.round((cur - prev)/prev*100); if (!ch) return '<span class="d">same as before</span>'; const good = inv ? ch < 0 : ch > 0; return `<span class="d ${good?'up':'down'}">${ch>0?'▲':'▼'} ${Math.abs(ch)}% vs previous</span>`; };
+  const p = d.prev || {};
+  $('kpis').innerHTML = [
+    ['Visitors', fmtN(t.visitors), delta(t.visitors, p.visitors)],
+    ['Visits', fmtN(t.sessions), delta(t.sessions, p.sessions)],
+    ['Avg time on site', fmtT(t.avgTime), delta(t.avgTime, p.avgTime)],
+    ['Median time', fmtT(t.medTime), '<span class="d">half stay longer</span>'],
+    ['Bounce rate', t.bounce + '%', delta(t.bounce, p.bounce, true)],
+    ['Returning', t.returning + '%', `<span class="d">${fmtN(t.returningN)} came back</span>`],
+    ['Reached the end', t.completed + '%', '<span class="d">scrolled to the booth</span>'],
+    ['Interactions', fmtN(t.acts), `<span class="d">${(t.sessions ? t.acts/t.sessions : 0).toFixed(1)} per visit</span>`]
+  ].map(([l,v,s]) => `<div class="kpi"><span class="lbl">${l}</span><b>${v}</b>${s}</div>`).join('');
+  series(d.series, d.bucket);
+  const reach = SHOTS.map((_,i) => i === 0 ? t.sessions : d.depth.slice(i).reduce((x,y) => x + y, 0));
+  bars('depth', reach.map((n,i) => [String(i+1).padStart(2,'0') + ' · ' + SHOTS[i], n]), t.sessions, 'var(--acc2)', true);
+  funnel(d.funnel, t.sessions);
+  bars('points', Object.keys(POINTS).map(k => [POINTS[k], d.points[k] || 0]), t.sessions);
+  bars('shoots', d.shoots.map(r => [pretty(r.val), r.u, r.c + ' opens']), null, 'var(--acc3)');
+  bars('projects', d.projects.map(r => [r.val, r.u, r.c + ' opens']), null, 'var(--acc2)');
+  bars('contact', d.contact.map(r => [CONTACT[r.val] || r.val, r.c]), null, 'var(--good)');
+  bars('countries', d.countries.map(r => [flag(r.k) + ' ' + (r.k || 'Unknown'), r.n]), t.sessions);
+  bars('devices', d.devices.concat(d.os).map(r => [r.k || 'Other', r.n]), t.sessions);
+  bars('refs', d.refs.map(r => [r.k || 'Direct / unknown', r.n]), t.sessions);
+  bars('browsers', d.browsers.map(r => [r.k || 'Other', r.n]), t.sessions);
+  hours(d.hours);
+  recent(d.recent);
+  $('upd').textContent = 'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + ' · refreshes every 30s';
+}
+function flag(cc){ return cc && cc.length === 2 ? String.fromCodePoint(...[...cc.toUpperCase()].map(c => 127397 + c.charCodeAt(0))) : '🌐'; }
+function bars(id, rows, total, color, keepOrder){
+  const el = $(id); rows = rows.filter(r => r[1] > 0 || keepOrder);
+  if (!rows.length){ el.innerHTML = '<div class="empty">Nothing yet</div>'; return; }
+  const max = Math.max(1, ...rows.map(r => r[1]));
+  el.innerHTML = rows.slice(0, keepOrder ? 99 : 8).map(([n,v,extra]) =>
+    `<div class="bar"><span class="n" title="${esc(n)}">${esc(n)}</span><span class="v">${fmtN(v)}${total ? ' · ' + pct(v,total) + '%' : ''}${extra ? ' · ' + esc(extra) : ''}</span><span class="t"><i style="width:${v/max*100}%;${color ? 'background:' + color : ''}"></i></span></div>`).join('');
+}
+function funnel(f, total){
+  const steps = [['Landed', total], ['Entered the room', f.entered], ['Scrolled into the room', f.room], ['Opened a point', f.opened], ['Opened a shoot / project', f.content], ['Reached the booth', f.end], ['Clicked a contact', f.contact]];
+  $('funnel').innerHTML = steps.map(([n,v]) => `<div class="row"><span>${n}</span><span class="t"><i style="width:${total ? Math.max(1.5, v/total*100) : 0}%"></i></span><span class="v">${fmtN(v)}<small>${pct(v,total)}%</small></span></div>`).join('');
+}
+function hours(h){
+  const max = Math.max(1, ...h);
+  $('hours').innerHTML = `<div class="hours">${h.map((v,i) => `<i data-tip="${String(i).padStart(2,'0')}:00 · ${v} visits" style="height:${v/max*100}%"></i>`).join('')}</div><div class="hl"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>`;
+}
+function recent(rows){
+  if (!rows.length){ $('recent').innerHTML = '<div class="empty">No visits yet</div>'; return; }
+  const when = ms => { const s = (Date.now() - ms)/1000; return s < 60 ? 'just now' : s < 3600 ? Math.floor(s/60) + ' min ago' : s < 86400 ? Math.floor(s/3600) + ' h ago' : new Date(ms).toLocaleDateString([], {day:'numeric', month:'short'}); };
+  const act = a => a.name === 'open' ? (POINTS[a.val] || a.val).split(' · ')[0] : a.name === 'shoot' ? 'Shoot: ' + pretty(a.val) : a.name === 'project' ? 'Project: ' + a.val : a.name === 'contact' ? '✉ ' + (CONTACT[a.val] || a.val) : a.name === 'idcard' ? 'Tapped ID card' : a.name;
+  $('recent').innerHTML = `<table><thead><tr><th>When</th><th>Where</th><th>Device</th><th>Time</th><th>Scrolled to</th><th>Did</th><th>From</th></tr></thead><tbody>${rows.map(r => `<tr>
+    <td>${when(r.s)}${r.returning ? ' <span class="chip">returning</span>' : ''}</td><td>${flag(r.country)} ${esc(r.city ? r.city + ', ' : '')}${esc(r.country || '—')}</td>
+    <td>${esc(r.device || '')} · ${esc(r.os || '')}<br><span style="color:var(--faint)">${esc(r.browser || '')}</span></td><td>${fmtT(r.dur)}</td>
+    <td>${r.depth == null ? '—' : esc(SHOTS[r.depth])}</td><td>${(r.acts || []).map(a => `<span class="chip">${esc(act(a))}</span>`).join('') || '<span style="color:var(--faint)">—</span>'}</td>
+    <td>${esc(r.ref || 'Direct')}</td></tr>`).join('')}</tbody></table>`;
+}
+function series(pts, bucket){
+  const el = $('series'), W = Math.max(320, el.clientWidth), H = 220, L = 34, R = 8, T = 10, B = 26;
+  $('tsHint').textContent = bucket === 'hour' ? 'per hour' : 'per day';
+  if (!pts.length){ el.innerHTML = '<div class="empty">No visits yet</div>'; return; }
+  const max = Math.max(4, ...pts.map(p => Math.max(p.v, p.s))), nice = Math.ceil(max / 4) * 4;
+  const x = i => L + (pts.length === 1 ? (W-L-R)/2 : i * (W - L - R) / (pts.length - 1)), y = v => T + (H - T - B) * (1 - v / nice);
+  const line = k => pts.map((p,i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p[k]).toFixed(1)).join(' ');
+  const area = line('v') + ` L${x(pts.length-1).toFixed(1)} ${H-B} L${x(0).toFixed(1)} ${H-B} Z`;
+  const step = Math.ceil(pts.length / Math.floor((W - L) / 70));
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}"><defs><linearGradient id="ga" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--acc)" stop-opacity=".35"/><stop offset="1" stop-color="var(--acc)" stop-opacity="0"/></linearGradient></defs>
+    ${[0,1,2,3,4].map(k => `<line class="gridl" x1="${L}" x2="${W-R}" y1="${y(nice*k/4)}" y2="${y(nice*k/4)}"/><text class="axis" x="${L-8}" y="${y(nice*k/4)+3}" text-anchor="end">${nice*k/4}</text>`).join('')}
+    <path d="${area}" fill="url(#ga)"/><path d="${line('s')}" fill="none" stroke="var(--acc2)" stroke-width="1.5" stroke-dasharray="3 4" opacity=".8"/><path d="${line('v')}" fill="none" stroke="var(--acc)" stroke-width="2"/>
+    ${pts.map((p,i) => i % step ? '' : `<text class="axis" x="${x(i)}" y="${H-6}" text-anchor="middle">${esc(p.l)}</text>`).join('')}
+    ${pts.map((p,i) => `<rect x="${x(i) - (W-L-R)/pts.length/2}" y="${T}" width="${(W-L-R)/pts.length}" height="${H-T-B}" fill="transparent" data-tip="${esc(p.l)} · ${p.v} visitors · ${p.s} visits"/>`).join('')}
+  </svg><div class="hl" style="justify-content:flex-start;gap:16px"><span style="color:var(--acc)">— visitors</span><span style="color:var(--acc2)">- - visits</span></div>`;
+}
+addEventListener('resize', () => data && series(data.series, data.bucket));
+const tip = $('tip');
+document.addEventListener('pointermove', e => { const t = e.target.closest && e.target.closest('[data-tip]'); if (!t){ tip.style.opacity = 0; return; } tip.textContent = t.dataset.tip; tip.style.left = e.clientX + 'px'; tip.style.top = e.clientY + 'px'; tip.style.opacity = 1; });
+$('csv').onclick = () => {
+  if (!data) return;
+  const rows = [['started','country','city','device','os','browser','seconds','deepest_scene','interactions','referrer']].concat(data.recent.map(r => [new Date(r.s).toISOString(), r.country, r.city, r.device, r.os, r.browser, Math.round(r.dur), r.depth == null ? '' : SHOTS[r.depth], (r.acts||[]).map(a => a.name + ':' + a.val).join(' | '), r.ref || '']));
+  const blob = new Blob([rows.map(r => r.map(c => '"' + String(c == null ? '' : c).replace(/"/g,'""') + '"').join(',')).join('\n')], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'portfolio-visits.csv'; a.click();
+};
+
+/* ---------- demo data (preview only) ---------- */
+function demo(d){
+  let seed = 7 + d; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const hourly = d <= 1, n = hourly ? 24 : d, series = [];
+  for (let i = 0; i < n; i++){ const dt = new Date(Date.now() - (n-1-i) * (hourly ? 36e5 : 864e5)); const base = hourly ? 2 + 6*Math.sin(Math.PI*((dt.getHours()+18)%24)/24)**2 : 14 + 10*Math.sin(i/2.3) + i*.4;
+    const v = Math.max(0, Math.round(base * (0.7 + rnd()*.6))); series.push({l: hourly ? String(dt.getHours()).padStart(2,'0') + ':00' : dt.toLocaleDateString([], {day:'numeric', month:'short'}), v, s: Math.round(v*(1.1+rnd()*.3))}); }
+  const visitors = series.reduce((a,p) => a+p.v, 0), sessions = series.reduce((a,p) => a+p.s, 0), S = sessions;
+  const depthCum = [1,.86,.74,.63,.55,.47,.39,.31].map(f => Math.round(S*f)), depth = depthCum.map((v,i) => v - (depthCum[i+1] || 0));
+  const shoots = ['vogue','athiya_kl_rahul','orry','esquire','sohbita','deepika_closet_cleanse','grunge','projection','axe','muskan'].map((k,i) => { const u = Math.round(S*.24/(1+i*.45)); return {val:k, u, c: Math.round(u*1.3)}; });
+  const C = (k,f) => ({k, n: Math.round(S*f)});
+  const recent = [...Array(30)].map((_,i) => { const cc = ['IN','IN','US','GB','AE','IN','DE','SG'][i%8]; const dep = Math.floor(rnd()*8); const acts = [];
+    if (dep >= 5 && rnd() > .3) acts.push({name:'open', val:'cam'}, {name:'shoot', val: shoots[Math.floor(rnd()*6)].val});
+    if (dep >= 5 && rnd() > .6) acts.push({name:'open', val:'system'}, {name:'project', val: rnd() > .5 ? 'Thesis' : 'Application design'});
+    if (dep >= 7 && rnd() > .5) acts.push({name:'open', val:'booth'}, {name:'contact', val: ['l-mail','l-work','l-personal'][Math.floor(rnd()*3)]});
+    return {s: Date.now() - i*(hourly?9e5:1.6e7)*(0.5+rnd()), country: cc, city: {IN:'Mumbai',US:'New York',GB:'London',AE:'Dubai',DE:'Berlin',SG:'Singapore'}[cc], device: rnd()>.45?'Desktop':'Mobile', os: rnd()>.5?'macOS':'iOS', browser: rnd()>.4?'Chrome':'Safari', dur: 20 + rnd()*400, depth: dep, acts, ref: ['instagram.com','Direct','linkedin.com','behance.net','google.com'][Math.floor(rnd()*5)], returning: rnd() > .8}; });
+  return {bucket: hourly ? 'hour' : 'day', live: 1 + Math.floor(rnd()*4), series,
+    totals: {visitors, sessions, avgTime: 158, medTime: 96, bounce: 31, returning: 18, returningN: Math.round(visitors*.18), completed: 31, acts: Math.round(S*2.4)},
+    prev: {visitors: Math.round(visitors*.84), sessions: Math.round(sessions*.88), avgTime: 141, bounce: 34},
+    depth, funnel: {entered: Math.round(S*.93), room: Math.round(S*.55), opened: Math.round(S*.46), content: Math.round(S*.38), end: Math.round(S*.31), contact: Math.round(S*.09)},
+    points: {cam: Math.round(S*.4), system: Math.round(S*.27), booth: Math.round(S*.19)}, shoots,
+    projects: [{val:'Application design', u: Math.round(S*.19), c: Math.round(S*.23)}, {val:'Thesis', u: Math.round(S*.15), c: Math.round(S*.17)}],
+    contact: [{val:'l-work', c: Math.round(S*.05)}, {val:'l-mail', c: Math.round(S*.035)}, {val:'l-personal', c: Math.round(S*.025)}],
+    countries: [C('IN',.52), C('US',.14), C('GB',.08), C('AE',.06), C('SG',.04), C('DE',.03)],
+    devices: [C('Desktop',.56), C('Mobile',.4), C('Tablet',.04)], os: [C('macOS',.34), C('iOS',.3), C('Windows',.2), C('Android',.12)],
+    browsers: [C('Chrome',.55), C('Safari',.33), C('Edge',.06), C('Firefox',.04)],
+    refs: [C('instagram.com',.38), C(null,.3), C('linkedin.com',.14), C('behance.net',.1), C('google.com',.06)],
+    hours: [...Array(24)].map((_,h) => Math.round(S/24 * (0.2 + 1.8*Math.sin(Math.PI*((h+15)%24)/24)**2))), recent};
+}
+load();
+})();
+</script>
+</body>
+</html>
