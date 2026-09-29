@@ -226,7 +226,7 @@ body{overflow:hidden;-webkit-user-select:none;user-select:none;}
 #gl-layer{pointer-events:none;}
 #gl-layer canvas{display:block;}
 /* the tour screen sized to the model's display (1.88 x 3.78 units) */
-#screen{width:330px;height:664px !important;border-radius:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;cursor:auto;}
+#screen{width:330px;height:664px !important;position:absolute;left:0;top:0;border-radius:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;cursor:auto;}
 .hud{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;justify-content:space-between;gap:12px;pointer-events:none;z-index:5;}
 .hint{font-family:var(--pixel);font-size:8px;line-height:1.8;color:var(--blue-dark);background:var(--white);border:1px solid var(--blue);border-radius:var(--radius);box-shadow:var(--bevel-raised);padding:8px 10px;}
 .hud button{pointer-events:auto;all:unset;pointer-events:auto;cursor:pointer;font-family:var(--pixel);font-size:8px;color:#fff;background:var(--orange);border:1px solid var(--orange-dark);border-radius:var(--radius);box-shadow:var(--bevel-raised);padding:9px 12px;}
@@ -640,6 +640,7 @@ window.startTour = function(){
   controls.dampingFactor = 0.08;
   controls.enablePan = false;
   controls.rotateSpeed = 0.7;
+  if (matchMedia('(pointer: coarse)').matches) { controls.minAzimuthAngle = -0.5; controls.maxAzimuthAngle = 1.0; controls.minPolarAngle = 1.1; controls.maxPolarAngle = 2.0; }   // keep the flat-placed screen believable on phones
   controls.addEventListener('change', () => { dirty = true; });
   stage.addEventListener('pointerdown', e => { if (!e.target.closest('#screen')) stage.classList.add('dragging'); });
   addEventListener('pointerup', () => stage.classList.remove('dragging'));
@@ -654,6 +655,26 @@ window.startTour = function(){
   }
 
   let home = null, frameSize = null, screenObj = null, screenMeshRef = null;
+  const FLAT = matchMedia('(pointer: coarse)').matches || /[?&]flat\b/.test(location.search);
+  const flatHost = document.createElement('div');
+  flatHost.style.cssText = 'position:absolute;inset:0;overflow:hidden;';
+  if (FLAT) cssHost.appendChild(flatHost);
+  const _c = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+  function placeFlat(){
+    if (!screenObj) return;
+    const W = screenEl.offsetWidth, H = screenEl.offsetHeight, vw = innerWidth, vh = innerHeight;
+    screenObj.updateMatrixWorld(true);
+    const pts = [[-W/2, H/2], [W/2, H/2], [-W/2, -H/2]].map(([x, y], k) => {
+      const p = _c[k].set(x, y, 0).applyMatrix4(screenObj.matrixWorld).project(camera);
+      return [(p.x + 1) / 2 * vw, (1 - p.y) / 2 * vh, p.z];
+    });
+    const [tl, tr, bl] = pts;
+    const a = (tr[0] - tl[0]) / W, b = (tr[1] - tl[1]) / W, c = (bl[0] - tl[0]) / H, d = (bl[1] - tl[1]) / H;
+    const facing = a * d - b * c > 0 && tl[2] < 1;
+    screenEl.style.transformOrigin = '0 0';
+    screenEl.style.transform = `matrix(${a.toFixed(5)},${b.toFixed(5)},${c.toFixed(5)},${d.toFixed(5)},${tl[0].toFixed(2)},${tl[1].toFixed(2)})`;
+    screenEl.style.visibility = facing ? 'visible' : 'hidden';
+  }
   // Fit the phone to the current window. Runs again on every resize, because inside the portfolio the
   // embed can load before its window has its final size (phones, TS-OS window opening).
   function fitPhone(first){
@@ -705,7 +726,10 @@ window.startTour = function(){
     screenMesh.geometry.computeBoundingBox();
     const sb = screenMesh.geometry.boundingBox;
     const sw = sb.max.x - sb.min.x, sh = sb.max.z - sb.min.z;
-    const obj = new THREE.CSS3DObject(screenEl);
+    // On touch screens the tour screen is placed with a flat 2D transform instead of CSS 3D: iPhone Safari
+    // flattens CSS 3D inside the portfolio's sideways layout, which pushed the screen off the phone and broke taps.
+    const obj = FLAT ? new THREE.Object3D() : new THREE.CSS3DObject(screenEl);
+    if (FLAT) { flatHost.appendChild(screenEl); }
     obj.position.set((sb.min.x + sb.max.x)/2, sb.max.y + 0.0005, (sb.min.z + sb.max.z)/2);
     obj.rotation.x = -Math.PI/2;
     const s = sw / PX_W;
@@ -863,7 +887,7 @@ window.startTour = function(){
     stepIntro(now); stepParallax(now);
     if (intro) dirty = true;
     controls.update();                       // fires 'change' while damping settles
-    if (dirty) { gl.render(scene, camera); css.render(scene, camera); dirty = false; }
+    if (dirty) { gl.render(scene, camera); if (FLAT) placeFlat(); else css.render(scene, camera); dirty = false; }
   })();
 })();
 </script>
