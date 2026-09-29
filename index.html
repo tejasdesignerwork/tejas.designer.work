@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Portfolio — Intro Preview</title>
+    <style>
+      html, body, #root { margin: 0; height: 100%; background: #05050a; overflow: hidden; }
+      #boot { position: fixed; inset: 0; display: grid; place-items: center; color: #8a7a72;
+              font: 500 11px/1.8 ui-monospace, Menlo, monospace; letter-spacing: .2em;
+              text-transform: uppercase; text-align: center; transition: opacity .8s ease; }
+    </style>
+    <style id="fit-all-screens">
+      /* Screen fitting for every device. The room's panels were sized with fixed vh/vw values;
+         these overrides keep them inside the visible area on phones, tablets, laptops and big monitors.
+         "html body" raises specificity above the app's own injected styles. */
+      html, body { height: 100%; }
+      html body .ts-ovl { padding: max(40px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+      html body .ts-crt-in { height: min(520px, calc(100dvh - 150px)); }
+      html body .ts-cam-screen { height: min(500px, calc(100dvh - 170px)); }
+      html body .ts-embed-frame { min-height: 160px; }
+
+      /* big monitors (1080p and up): give projects more room */
+      @media (min-width: 1600px) and (min-height: 900px) {
+        html body .ts-crt { width: min(1180px, 88vw); }
+        html body .ts-crt-in { height: min(680px, calc(100dvh - 190px)); }
+        html body .ts-cam { width: min(1200px, 88vw); }
+        html body .ts-cam-screen { height: min(640px, calc(100dvh - 200px)); }
+      }
+      /* short screens: phones in landscape, small laptop windows */
+      @media (max-height: 560px) {
+        html body .ts-ovl { padding-top: 30px; padding-bottom: 8px; }
+        html body .ts-close { top: -24px; }
+        html body .ts-crt { padding: 8px; }
+        html body .ts-crt-in { height: calc(100dvh - 64px); }
+        html body .ts-crt-side { width: 150px; font-size: 16px; padding: 10px; }
+        html body .ts-crt-body { padding: 10px 12px; }
+        html body .ts-embed .meta { display: none; }
+        html body .ts-cam { padding: 10px; }
+        html body .ts-cam-screen { height: calc(100dvh - 70px); }
+      }
+      /* phones held upright: the app turns its content sideways, so the visible width is 100vh and height is 100vw */
+      html body .ts-rotate-inner .ts-ovl { padding: 30px 12px 8px; }
+      html body .ts-rotate-inner .ts-close { top: -24px; }
+      html body .ts-rotate-inner .ts-crt { width: min(920px, calc(100vh - 24px)); padding: 8px; }
+      html body .ts-rotate-inner .ts-crt-in { height: calc(100vw - 64px); }
+      html body .ts-rotate-inner .ts-crt-side { width: 150px; font-size: 16px; padding: 10px; }
+      html body .ts-rotate-inner .ts-crt-body { padding: 10px 12px; }
+      html body .ts-rotate-inner .ts-embed .meta { display: none; }
+      html body .ts-rotate-inner .ts-cam { width: min(960px, calc(100vh - 24px)); flex-direction: row; padding: 10px; }
+      html body .ts-rotate-inner .ts-cam-screen { height: calc(100vw - 70px); }
+      html body .ts-rotate-inner .ts-keys { width: 110px; flex-direction: column; flex-wrap: nowrap; }
+      html body .ts-rotate-inner .ts-contact { width: min(520px, calc(100vh - 32px)); max-height: calc(100vw - 50px); overflow-y: auto; }
+      /* tablets held upright (iPad): use the extra height */
+      @media (min-width: 700px) and (max-width: 1100px) and (orientation: portrait) {
+        html body .ts-crt-in { height: min(760px, calc(100dvh - 220px)); }
+        html body .ts-cam-screen { height: min(700px, calc(100dvh - 240px)); }
+      }
+    </style>
+    <script>
+      // phone booth scene: Escape pressed inside it closes the booth like the Close button
+      window.addEventListener('message', function (e) {
+        if (!e.data || e.data.type !== 'booth-close') return;
+        var b = document.querySelector('.ts-booth-full .ts-close'); if (b) b.click();
+      });
+    </script>
+    <!-- Analytics: paste your Worker address between the quotes, e.g. 'https://portfolio-analytics.yourname.workers.dev' -->
+    <script>window.PF_ANALYTICS = '';</script>
+    <script>
+/* Portfolio analytics tracker — anonymous, no cookies. Sends to the Cloudflare Worker set in PF_ANALYTICS.
+   Visit the site once with ?owner=1 to stop counting your own visits on that browser (?owner=0 to undo). */
+(function () {
+  var EP = window.PF_ANALYTICS || '';
+  try {
+    var q = location.search;
+    if (/[?&]owner=1/.test(q)) localStorage.setItem('pf-owner', '1');
+    if (/[?&]owner=0/.test(q)) localStorage.removeItem('pf-owner');
+    if (localStorage.getItem('pf-owner') === '1') EP = '';
+  } catch (e) {}
+  var rid = function () { return (Math.random().toString(36).slice(2) + Date.now().toString(36)).slice(0, 20); };
+  var vid, sid;
+  try { vid = localStorage.getItem('pf-vid') || rid(); localStorage.setItem('pf-vid', vid); } catch (e) { vid = rid(); }
+  try { sid = sessionStorage.getItem('pf-sid') || rid(); sessionStorage.setItem('pf-sid', sid); } catch (e) { sid = rid(); }
+  var queue = [], depth = -1, seen = {};
+  function push(t, n, v) { queue.push({t: t, n: n || null, v: v == null ? null : String(v), at: Date.now()}); if (queue.length > 40) flush(); }
+  function flush(useBeacon) {
+    if (!queue.length || !EP || location.protocol === 'file:') { queue.length = 0; return; }
+    var now = Date.now(), ev = queue.splice(0, queue.length).map(function (e) { return {t: e.t, n: e.n, v: e.v, a: now - e.at}; });
+    var body = JSON.stringify({v: vid, s: sid, p: location.pathname, r: document.referrer || null, sw: screen.width, sh: screen.height, l: navigator.language, ev: ev});
+    var url = EP.replace(/\/$/, '') + '/e';
+    if (useBeacon && navigator.sendBeacon) { navigator.sendBeacon(url, new Blob([body], {type: 'text/plain'})); return; }
+    try { fetch(url, {method: 'POST', body: body, keepalive: true, headers: {'content-type': 'text/plain'}}).catch(function () {}); } catch (e) {}
+  }
+  window.pfTrack = function (n, v) { push('act', n, v); };
+  push('view');
+  setInterval(function () { if (document.visibilityState === 'visible') push('hb'); }, 15000);
+  setInterval(flush, 8000);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flush(true); });
+  addEventListener('pagehide', function () { flush(true); });
+
+  // events from the 3D room (scroll scenes, entering, reaching the end)
+  window.__pfBus = function (n, e) {
+    if (n === 'enter') push('sys', 'enter');
+    else if (n === 'shot' && e && e.index > depth) { depth = e.index; push('sys', 'shot', depth); }
+    else if (n === 'loop') push('sys', 'loop');
+  };
+  // which interactive point / project is open
+  var open = {};
+  function check() {
+    var st = {cam: !!document.querySelector('.ts-cam'), booth: !!document.querySelector('.ts-booth-full'), system: !!document.querySelector('.ts-crt')};
+    Object.keys(st).forEach(function (k) { if (st[k] && !open[k]) push('act', 'open', k); open[k] = st[k]; });
+    var f = document.querySelector('.ts-crt iframe[title]'), t = f && f.getAttribute('title');
+    if (t && t !== open.project) push('act', 'project', t);
+    open.project = t || null;
+  }
+  new MutationObserver(check).observe(document.documentElement, {childList: true, subtree: true});
+  // messages from the embedded scenes (photo sphere, phone booth, ID card)
+  addEventListener('message', function (e) {
+    var d = e.data; if (!d || typeof d !== 'object') return;
+    if (d.type === 'pf-track' && d.n) {
+      var k = d.n + ':' + d.v;
+      if (d.n === 'shoot_media' && seen[k]) return; seen[k] = 1;
+      push('act', String(d.n).slice(0, 40), d.v);
+    }
+    if (d.type === 'idcard' && d.state === 'gone' && !seen.idcard) { seen.idcard = 1; push('act', 'idcard', 'tap'); }
+  });
+})();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- Creative License card intro: flies in, tap it to slide it away, then the portfolio's Enter runs -->
+    <style>
+      #idcard-intro { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; z-index: 100; background: #05060a; transition: opacity .45s ease; }
+      #idcard-intro.gone { opacity: 0; pointer-events: none; }
+      html.idcard-on .ts-entry { opacity: 0 !important; pointer-events: none !important; }
+      html.idcard-on #boot { opacity: 0 !important; }
+    </style>
+    <script>
+      (function () {
+        var root = document.documentElement, frame = document.createElement('iframe');
+        root.classList.add('idcard-on');
+        frame.id = 'idcard-intro'; frame.src = 'idcard/index.html'; frame.title = 'Creative License'; frame.allow = 'autoplay';
+        document.body.appendChild(frame);
+        function finish() { frame.classList.add('gone'); setTimeout(function () { frame.remove(); }, 600); }
+        function enter() {
+          var started = Date.now();
+          (function attempt() {
+            var btn = document.querySelector('.ts-entry button');
+            if (btn && !btn.disabled) {
+              btn.click();                                   // same as pressing Enter: the room starts and the ball drops
+              finish();
+              setTimeout(function () { root.classList.remove('idcard-on'); }, 1600);
+            } else if (Date.now() - started < 4000) {
+              setTimeout(attempt, 150);                      // scene still loading: wait a moment
+            } else {
+              root.classList.remove('idcard-on'); finish();  // slow load: show the loader and its Enter button
+            }
+          })();
+        }
+        // pass the room's loading progress to the card so its hint can show it
+        var progress = setInterval(function () {
+          if (!frame.contentWindow) return;
+          var pct = document.querySelector('.ts-entry .pct'), btn = document.querySelector('.ts-entry button');
+          var ready = !!(btn && !btn.disabled), m = pct && /(\d+)%/.exec(pct.textContent);
+          frame.contentWindow.postMessage({type: 'idcard-progress', ready: ready, pct: m ? m[1] : 0}, '*');
+          if (!document.getElementById('idcard-intro')) clearInterval(progress);
+        }, 300);
+        window.addEventListener('message', function (e) {
+          if (e.source !== frame.contentWindow || !e.data || e.data.type !== 'idcard') return;
+          if (e.data.state === 'gone') enter();
+        });
+      })();
+    </script>
+    <!-- "Keep scrolling" cue: shows when the ball first lands on the desk, fades out once the viewer scrolls or swipes -->
+    <style>
+      #scroll-cue { position: fixed; left: 50%; bottom: max(28px, calc(env(safe-area-inset-bottom) + 18px)); z-index: 60;
+        transform: translate(-50%, 12px); display: flex; align-items: center; gap: 12px; padding: 12px 20px 12px 16px;
+        border-radius: 999px; background: rgba(8, 8, 12, .55); border: 1px solid rgba(236, 226, 214, .16);
+        -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+        color: #efe6da; font: 500 clamp(13px, 1.05vw, 15px)/1.2 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .16em;
+        text-transform: uppercase; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .7s ease, transform .7s cubic-bezier(.2, .8, .2, 1); }
+      #scroll-cue.on { opacity: 1; transform: translate(-50%, 0); }
+      #scroll-cue.off { opacity: 0; transform: translate(-50%, 8px); transition-duration: .45s; }
+      #scroll-cue .ic { width: 18px; height: 28px; border: 1.5px solid currentColor; border-radius: 10px; position: relative; flex: none; opacity: .9; }
+      #scroll-cue .ic::after { content: ""; position: absolute; left: 50%; top: 5px; width: 3px; height: 6px; margin-left: -1.5px; border-radius: 2px;
+        background: currentColor; animation: cue-wheel 1.6s ease-in-out infinite; }
+      @keyframes cue-wheel { 0% { transform: translateY(0); opacity: 1 } 70% { transform: translateY(9px); opacity: 0 } 100% { transform: translateY(0); opacity: 0 } }
+      @media (hover: none) and (pointer: coarse) {
+        #scroll-cue { font-size: 13px; letter-spacing: .12em; padding: 11px 18px 11px 14px; }
+        #scroll-cue .ic { border-radius: 50%; width: 22px; height: 22px; border-width: 1.5px; }
+        #scroll-cue .ic::after { top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; animation: cue-swipe 1.6s ease-in-out infinite; }
+        @keyframes cue-swipe { 0% { transform: translateY(5px); opacity: 0 } 25% { opacity: 1 } 80% { transform: translateY(-7px); opacity: 0 } 100% { opacity: 0 } }
+      }
+      @media (prefers-reduced-motion: reduce) { #scroll-cue .ic::after { animation: none; } }
+    </style>
+    <div id="scroll-cue" role="status" aria-live="polite"><span class="ic" aria-hidden="true"></span><span>Keep scrolling till the end</span></div>
+    <script>
+      (function () {
+        var cue = document.getElementById('scroll-cue'), shown = false, gone = false;
+        function hide() {
+          if (!shown || gone) return; gone = true; cue.classList.add('off');
+          ['wheel', 'touchmove', 'keydown'].forEach(function (ev) { window.removeEventListener(ev, onInput, true); });
+          setTimeout(function () { cue.remove(); }, 600);
+        }
+        function onInput(e) {
+          if (e.type === 'keydown' && ['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', ' ', 'End', 'Home'].indexOf(e.key) < 0) return;
+          if (e.type === 'wheel' && Math.abs(e.deltaY) + Math.abs(e.deltaX) < 4) return;
+          hide();
+        }
+        window.addEventListener('pf-ball-land', function () {
+          if (shown) return; shown = true;
+          setTimeout(function () {
+            cue.classList.add('on');
+            ['wheel', 'touchmove', 'keydown'].forEach(function (ev) { window.addEventListener(ev, onInput, { capture: true, passive: true }); });
+          }, 350);
+        });
+      })();
+    </script>
+    <div id="boot">loading<br><span style="color:#5d4a42">≈30 seconds — 19&nbsp;mb scene</span></div>
+    <script>
+      /* Pause the 3D room while a project runs in the TS-OS screen, so the embed gets the GPU.
+         The room is hidden behind the blurred overlay then; it resumes where it left off on close. */
+      (function () {
+        var raf = window.requestAnimationFrame.bind(window), caf = window.cancelAnimationFrame.bind(window);
+        var queue = [], paused = false;
+        window.requestAnimationFrame = function (cb) { if (!paused) return raf(cb); queue.push(cb); return -queue.length; };
+        window.cancelAnimationFrame = function (id) { if (id < 0) { queue[-id - 1] = null; return; } caf(id); };
+        function setPaused(p) {
+          if (p === paused) return; paused = p;
+          if (!p) { var list = queue; queue = []; list.forEach(function (cb) { if (cb) raf(cb); }); }
+        }
+        new MutationObserver(function () { setPaused(!!document.querySelector('.ts-embed-frame')); })
+          .observe(document.documentElement, { childList: true, subtree: true });
+      })();
+    </script>
+    <script>
+      /* The 3D room (~25 MB) loads once the card has finished flying in, so the fly-in never stutters.
+         Scripts load one after another in their original order. */
+      (function () {
+        var files = ["parts/p000.js", "parts/p001.js", "parts/p002.js", "parts/p003.js", "parts/p004.js", "parts/p005.js", "parts/p006.js", "parts/p007.js", "parts/p008.js", "parts/p009.js", "parts/p010.js", "parts/p011.js", "parts/p012.js", "parts/p013.js", "parts/p014.js", "parts/p015.js", "parts/p016.js", "parts/p017.js", "parts/p018.js", "parts/p019.js", "parts/p020.js", "parts/p021.js", "parts/p022.js", "parts/p023.js", "parts/p024.js", "parts/p025.js", "parts/p026.js", "parts/p027.js", "parts/p028.js", "parts/p029.js", "parts/p030.js", "parts/p031.js", "app-thesis.js"], started = false;
+        function load() {
+          if (started) return; started = true;
+          (function next(i) {
+            if (i >= files.length) return;
+            var s = document.createElement('script'); s.src = './' + files[i];
+            s.onload = function () { next(i + 1); };
+            s.onerror = function () { console.error('Could not load ' + files[i]); next(i + 1); };
+            document.body.appendChild(s);
+          })(0);
+        }
+        window.addEventListener('message', function (e) { if (e.data && e.data.type === 'idcard' && (e.data.state === 'floating' || e.data.state === 'leaving')) load(); });
+        setTimeout(load, 7000);                               // safety net if the card page can't load
+        if (!document.getElementById('idcard-intro')) load(); // intro removed: load straight away
+      })();
+    </script>
+    <script>
+      var t = setInterval(function () {
+        if (document.querySelector('canvas')) {
+          clearInterval(t);
+          var b = document.getElementById('boot');
+          if (b) { b.style.opacity = '0'; setTimeout(function () { b.remove() }, 900) }
+        }
+      }, 300);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,13 @@
+# not part of the live site
+*.bak-*
+*.bak
+_to_delete/
+_analytics/
+.DS_Store
+app-[0-9]*.js
+app-nolights.js
+jstest*.html
+nodata.html
+nolights.html
+run.html
+portfolio-intro-preview.html

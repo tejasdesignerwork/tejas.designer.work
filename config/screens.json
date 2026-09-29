@@ -1,0 +1,17 @@
+{
+  "_readme": "Key = the display mesh's object name AS THREE.js's GLTFLoader names it at runtime (it strips dots '.' from the raw Blender/glTF node name to keep animation-binding paths valid — e.g. 'monitor.001_low_monitor_0' in Blender becomes 'monitor001_low_monitor_0' here). Value = an image file placed in public/screens/. Swap the file (same name) or change the value to update what plays on that screen — no code changes, no rebuild of the .glb needed.",
+  "screens": {
+    "monitor_low_monitor_0": "screen_01.jpg",
+    "monitor001_low_monitor_0": "screen_02.jpg",
+    "monitor002_low_monitor_0": "screen_03.jpg",
+    "monitor003_low_monitor_0": "screen_04.jpg",
+    "monitor004_low_monitor_0": "screen_05.jpg",
+    "monitor005_low_monitor_0": "screen_06.jpg",
+    "monitor006_low_monitor_0": "screen_07.jpg",
+    "monitor007_low_monitor_0": "screen_08.jpg"
+  },
+  "lightLeak": {
+    "color": "#ff5a2e",
+    "intensity": 0.55
+  }
+}
