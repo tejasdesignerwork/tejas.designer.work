@@ -98,8 +98,22 @@ async function stats(env, days, tz){
   };
 }
 
+// creates the table on first use, so the database needs no manual setup
+let schemaReady = null;
+function ensureSchema(env){
+  if (!schemaReady) schemaReady = env.DB.batch([
+    env.DB.prepare('CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER NOT NULL, vid TEXT NOT NULL, sid TEXT NOT NULL, type TEXT NOT NULL, name TEXT, val TEXT, path TEXT, ref TEXT, country TEXT, city TEXT, device TEXT, browser TEXT, os TEXT, sw INTEGER, sh INTEGER, lang TEXT)'),
+    env.DB.prepare('CREATE INDEX IF NOT EXISTS ev_ts ON events(ts)'),
+    env.DB.prepare('CREATE INDEX IF NOT EXISTS ev_sid ON events(sid)'),
+    env.DB.prepare('CREATE INDEX IF NOT EXISTS ev_vid ON events(vid, ts)')
+  ]).catch(e => { schemaReady = null; throw e; });
+  return schemaReady;
+}
+
 export default {
   async fetch(req, env, ctx){
+    const url0 = new URL(req.url);
+    if (env.DB && (url0.pathname === '/e' || url0.pathname === '/api/stats') && req.method !== 'OPTIONS') await ensureSchema(env);
     const url = new URL(req.url);
     if (url.pathname === '/e') return collect(req, env, ctx);
     if (url.pathname === '/api/stats'){
