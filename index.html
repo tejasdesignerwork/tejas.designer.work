@@ -191,16 +191,21 @@
       @media (hover: none) and (pointer: coarse) {
         #scroll-cue { font-size: 13px; letter-spacing: .12em; padding: 11px 18px 11px 14px; }
         #scroll-cue .ic { border-radius: 50%; width: 22px; height: 22px; border-width: 1.5px; }
+        #scroll-cue { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(8, 8, 12, .78); }
         #scroll-cue .ic::after { top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; animation: cue-swipe 1.6s ease-in-out infinite; }
         @keyframes cue-swipe { 0% { transform: translateY(5px); opacity: 0 } 25% { opacity: 1 } 80% { transform: translateY(-7px); opacity: 0 } 100% { opacity: 0 } }
       }
+      #scroll-cue .keys { display: none; gap: 5px; margin-left: 4px; }
+      @media (hover: hover) and (pointer: fine) { #scroll-cue .keys { display: inline-flex; } }
+      #scroll-cue kbd { font: inherit; font-size: 12px; letter-spacing: 0; min-width: 22px; height: 22px; display: inline-grid; place-items: center;
+        border: 1px solid rgba(236, 226, 214, .35); border-bottom-width: 2px; border-radius: 5px; color: #ffb15c; }
       @media (prefers-reduced-motion: reduce) { #scroll-cue .ic::after { animation: none; } }
       /* phone held upright: the room is turned sideways, so the cue turns with it and sits at the scene's bottom edge */
       html.pf-rot #scroll-cue { left: calc(env(safe-area-inset-left, 0px) + 40px); top: 50%; bottom: auto; transform: translate(-50%, -50%) rotate(90deg) translateY(10px); }
       html.pf-rot #scroll-cue.on { transform: translate(-50%, -50%) rotate(90deg); }
       html.pf-rot #scroll-cue.off { transform: translate(-50%, -50%) rotate(90deg) translateY(8px); }
     </style>
-    <div id="scroll-cue" role="status" aria-live="polite"><span class="ic" aria-hidden="true"></span><span>Keep scrolling till the end</span></div>
+    <div id="scroll-cue" role="status" aria-live="polite"><span class="ic" aria-hidden="true"></span><span>Keep scrolling till the end</span><span class="keys" aria-label="or use the up and down arrow keys"><kbd>&uarr;</kbd><kbd>&darr;</kbd></span></div>
     <script>
       (function () {
         var cue = document.getElementById('scroll-cue'), shown = false, gone = false;
@@ -278,6 +283,47 @@
         window.addEventListener('resize', place);
       })();
     </script>
+    <!-- Smooth phones: lighter scene file, adaptive resolution, cheaper glass. Desktop: arrow keys. Verification photos from the web. -->
+    <script src="verify/pool.js" async></script>
+    <script>
+      (function () {
+        var phone = window.__pfPhone = matchMedia('(pointer: coarse)').matches && Math.min(innerWidth, innerHeight) <= 560;
+        if (phone) window.__pfDpr = [1, 1.25];
+        // arrow keys (desktop): up = forward, down = back - counted in analytics
+        window.__pfKey = function (d) { try { window.pfTrack && window.pfTrack('key', d > 0 ? 'fwd' : 'back'); } catch (e) {} };
+        if (!phone) return;
+        var tries = 0, fixed = false;
+        var t = setInterval(function () {
+          var st = window.__st; if (++tries > 240) clearInterval(t);
+          if (!st || !st.scene) return;
+          if (!fixed) {           // the booth glass: real-time refraction re-draws the whole room a second time each frame
+            var n = 0;
+            st.scene.traverse(function (o) {
+              if (!o.isMesh) return;
+              [].concat(o.material).forEach(function (m) { if (m && m.transmission > 0) { m.transmission = 0; m.transparent = true; m.opacity = 0.2; m.depthWrite = false; m.needsUpdate = true; n++; } });
+            });
+            if (n) fixed = true;
+          }
+          if (fixed) { clearInterval(t); adapt(st); }
+        }, 500);
+        // adaptive resolution: drop sharpness a notch if the phone can't hold ~45 fps, raise it back when it can
+        function adapt(st) {
+          var dpr = 1.25, last = 0, sum = 0, cnt = 0, good = 0, bad = 0;
+          (function tick(now) {
+            requestAnimationFrame(tick);
+            if (document.hidden || document.querySelector('.ts-embed-frame')) { last = 0; return; }
+            if (last) { var d = now - last; if (d < 250) { sum += d; cnt++; } }
+            last = now;
+            if (cnt >= 90) {
+              var avg = sum / cnt; sum = cnt = 0;
+              if (avg > 22) { good = 0; if (++bad >= 2 && dpr > 1) { dpr = Math.max(1, dpr - 0.125); st.setDpr(dpr); bad = 0; } }
+              else if (avg < 17.5) { bad = 0; if (++good >= 4 && dpr < 1.25) { dpr = Math.min(1.25, dpr + 0.125); st.setDpr(dpr); good = 0; } }
+              else { good = bad = 0; }
+            }
+          })(0);
+        }
+      })();
+    </script>
     <div id="boot">loading<br><span style="color:#5d4a42">≈30 seconds — 19&nbsp;mb scene</span></div>
     <script>
       /* Pause the 3D room while a project runs in the TS-OS screen, so the embed gets the GPU.
@@ -300,6 +346,9 @@
          Scripts load one after another in their original order. */
       (function () {
         var files = ["parts/p000.js", "parts/p001.js", "parts/p002.js", "parts/p003.js", "parts/p004.js", "parts/p005.js", "parts/p006.js", "parts/p007.js", "parts/p008.js", "parts/p009.js", "parts/p010.js", "parts/p011.js", "parts/p012.js", "parts/p013.js", "parts/p014.js", "parts/p015.js", "parts/p016.js", "parts/p017.js", "parts/p018.js", "parts/p019.js", "parts/p020.js", "parts/p021.js", "parts/p022.js", "parts/p023.js", "parts/p024.js", "parts/p025.js", "parts/p026.js", "parts/p027.js", "parts/p028.js", "parts/p029.js", "parts/p030.js", "parts/p031.js", "app-thesis.js"], started = false;
+        if (/^https?:$/.test(location.protocol)) {      // online: fetch the binary scene (phones get lighter textures), skip the inline copy
+          window.__SCENE_URL = window.__pfPhone ? 'scene-m.glb' : 'scene.glb'; files = ['app-thesis.js'];
+        }
         function load() {
           if (started) return; started = true;
           (function next(i) {

@@ -47,7 +47,7 @@ window.PfNavIsland = function(host, api){
 
   let keys = null;
   const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -218,10 +218,17 @@ window.PfNavIsland = function(host, api){
 
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, clock = new THREE.Clock();
   let ry = 0, rx = 0, ledT = 0;
-  let hidden = true, lastIdx = -1;
+  let hidden = true, lastIdx = -1, frame = 0, busy = 30;
   renderer.setAnimationLoop(() => {
     if (hidden) return;
-    const idx = api.index(); if (idx !== lastIdx){ lastIdx = idx; drawLcd(String(idx + 1).padStart(2, '0')); keys.back.userData.dim = idx === 0; }
+    const idx = api.index(); if (idx !== lastIdx){ lastIdx = idx; drawLcd(String(idx + 1).padStart(2, '0')); keys.back.userData.dim = idx === 0; busy = 30; }
+    // keep the main room smooth: full rate only while something moves, ~20 fps when the island just floats
+    frame++;
+    const moving = intro.t0 < 0 || performance.now() - intro.t0 < 1800 || hot || keys.fwd.userData.flash > 0 || keys.back.userData.flash > 0 ||
+      Math.abs(keys.fwd.userData.v) + Math.abs(keys.back.userData.v) > 0.002 || keys.fwd.userData.hover + keys.back.userData.hover > 0.01;
+    if (moving) busy = 20; else if (busy > 0) busy--;
+    if (!busy && frame % 3) return;
+    renderer.shadowMap.autoUpdate = busy > 0 || frame % 30 === 0;
     const dt = Math.min(clock.getDelta(), 1/30), t = clock.elapsedTime;
     const bob = reduce ? 0 : Math.sin(t * 1.3) * 0.05;
     ry += ((-0.36 + tx * 0.5 + (reduce ? 0 : Math.sin(t * 0.7) * 0.05)) - ry) * (1 - Math.exp(-dt * 4));
