@@ -346,18 +346,22 @@
          Scripts load one after another in their original order. */
       (function () {
         var files = ["parts/p000.js", "parts/p001.js", "parts/p002.js", "parts/p003.js", "parts/p004.js", "parts/p005.js", "parts/p006.js", "parts/p007.js", "parts/p008.js", "parts/p009.js", "parts/p010.js", "parts/p011.js", "parts/p012.js", "parts/p013.js", "parts/p014.js", "parts/p015.js", "parts/p016.js", "parts/p017.js", "parts/p018.js", "parts/p019.js", "parts/p020.js", "parts/p021.js", "parts/p022.js", "parts/p023.js", "parts/p024.js", "parts/p025.js", "parts/p026.js", "parts/p027.js", "parts/p028.js", "parts/p029.js", "parts/p030.js", "parts/p031.js", "app-thesis.js"], started = false;
-        if (/^https?:$/.test(location.protocol)) {      // online: fetch the binary scene (phones get lighter textures), skip the inline copy
-          window.__SCENE_URL = window.__pfPhone ? 'scene-m.glb' : 'scene.glb'; files = ['app-thesis.js'];
-        }
         function load() {
           if (started) return; started = true;
-          (function next(i) {
+          // online: fetch the binary scene (phones get lighter textures) instead of the inline copy - if it's reachable
+          if (/^https?:$/.test(location.protocol)) {
+            var url = window.__pfPhone ? 'scene-m.glb' : 'scene.glb';
+            fetch(url, { method: 'HEAD', cache: 'no-cache' }).then(function (r) {
+              if (r.ok) { window.__SCENE_URL = url; files = ['app-thesis.js']; }
+            }).catch(function () {}).then(function () { next(0); });
+          } else next(0);
+          function next(i) {
             if (i >= files.length) return;
             var s = document.createElement('script'); s.src = './' + files[i];
             s.onload = function () { next(i + 1); };
             s.onerror = function () { console.error('Could not load ' + files[i]); next(i + 1); };
             document.body.appendChild(s);
-          })(0);
+          }
         }
         window.addEventListener('message', function (e) { if (e.data && e.data.type === 'idcard' && (e.data.state === 'floating' || e.data.state === 'leaving')) load(); });
         setTimeout(load, 7000);                               // safety net if the card page can't load

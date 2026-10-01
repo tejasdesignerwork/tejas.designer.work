@@ -15,7 +15,7 @@
     [['lanterns', 'Q862454', 'lantern'], ['teapots', 'Q245005', 'teapot']]
   ];
   var KEY = 'pf-cap-v1', CAP = 48, API = 'https://commons.wikimedia.org/w/api.php';
-  var BAD = /diagram|logo|map|drawing|patent|stamp|icon|svg|chart|plan|scheme|poster|coat of arms|banknote|coin/i;
+  var BAD = /diagram|logo|map|drawing|patent|stamp|icon|svg|chart|plan|scheme|poster|coat of arms|banknote|coin|painting|print|woodblock|ukiyo|engraving|etching|lithograph|illustration|sketch|MET DP|Rijksmuseum|manuscript|postcard|catalog|advert/i;
 
   function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function load() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
